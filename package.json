@@ -1,0 +1,17 @@
+{
+  "name": "ramda-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "watch": "jest --watchAll"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jest": "^21.2.1",
+    "ramda": "^0.25.0",
+    "request-promise": "^4.2.2"
+  }
+}
