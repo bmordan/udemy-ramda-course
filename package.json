@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "jest": "^21.2.1",
-    "ramda": "^0.25.0",
-    "request-promise": "^4.2.2"
+    "popsicle": "^9.2.0",
+    "ramda": "^0.25.0"
   }
 }
