@@ -4,14 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "watch": "jest --watchAll"
+    "test": "jest --watchAll"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "jest": "^21.2.1",
-    "popsicle": "^9.2.0",
     "ramda": "^0.25.0"
   }
 }

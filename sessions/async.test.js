@@ -25,7 +25,7 @@ const getCardImage = (res) => {
   return Promise.resolve(cardImage(res))
 }
 
-describe('working asynchronously', () => {
+describe.skip('working asynchronously', () => {
   test('draw a card', () => {
     const drawACard = R.pipeP(
       getDeck,
