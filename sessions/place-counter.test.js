@@ -42,7 +42,20 @@ const {
   flatten,
   insert,
   ascend,
-  sort
+  sort,
+  until,
+  evolve,
+  path,
+  when,
+  unless,
+  of,
+  gt,
+  lt,
+  gte,
+  lte,
+  length,
+  converge,
+  equals
 } = require('ramda')
 const Maybe = require('../fixtures/maybe')
 
@@ -106,58 +119,58 @@ test('you can check the cells around you', () => {
 
   const maybeCounter = curry((board, [rowInd, colInd]) => {
     const maybe = Maybe.of(board[rowInd])
-
-    if (maybe.isNothing()) return maybe
-    return Maybe.of(board[rowInd][colInd])
+    return maybe.isNothing()
+      ? maybe
+      : Maybe.of(board[rowInd][colInd])
   })
 
   const updateBoard = curry((board, color, ref) => {
     const [rowInd, colInd] = ref
-    const newRow = always(adjust(always({color, ref}), colInd, board[rowInd]))
+    const newRow = always(
+      adjust(always({color, ref}), colInd, board[rowInd])
+    )
     return adjust(newRow, rowInd, board)
   })
 
-  const connect = curry((n, ref) => {
-    const [rowInd, colInd] = ref
-    const transpose = (transFn) => {
-      const [rowTrans, colTrans] = transFn
-      return [rowTrans(rowInd), colTrans(colInd)]
+  const up = adjust(dec, 0)
+  const down = adjust(inc, 0)
+  const left = adjust(dec, 1)
+  const right = adjust(inc, 1)
+  const upLeft = pipe(adjust(dec, 0), adjust(dec, 1))
+  const downRight = pipe(adjust(inc, 0), adjust(inc, 1))
+  const upRight = pipe(adjust(dec, 0), adjust(inc, 1))
+  const downLeft = pipe(adjust(inc, 0), adjust(dec, 1))
+  const transformFns = [
+    [up, down],
+    [left, right],
+    [upLeft, downRight],
+    [upRight, downLeft]
+  ]
+  const connect4 = (connections) => gt(4, length(connections))
+  const maybeRef = path(['_val', 'ref'])
+  const maybeColor = path(['_val', 'color'])
+
+  const findConnectionsFor = (color, ref) => {
+    const maybeFor = maybeCounter(last(turn))
+
+    const fn = (connections, transformFn) => {
+      const tryConnect4 = reduce((acc, transFn) => {
+        function tryConnect (acc, ref) {
+          const maybe = maybeFor(ref)
+          if (maybe.isNothing()) return acc
+          const rightColor = equals(maybeColor(maybe), color)
+          if (not(rightColor)) return acc
+          const nextRef = transFn(maybeRef(maybe))
+          const nextAcc = concat(acc, of(maybeRef(maybe)))
+          return tryConnect(nextAcc, nextRef)
+        }
+        const foundConnections = tryConnect(acc, transFn(ref))
+        return connect4(foundConnections) ? connections : foundConnections
+      }, connections, transformFn)
+      return tryConnect4
     }
-    return map(transpose, [
-      [subtract(__, n), identity], // up
-      [add(n), identity], // down
-      [identity, subtract(__, n)], // left
-      [identity, add(n)], // right
-      [add(n), add(n)], // down right
-      [subtract(__, n), subtract(__, n)], // up left
-      [subtract(__, n), add(n)], // up right
-      [add(n), subtract(__, n)]  // down right
-    ])
-  })
 
-  const isRed = propEq('color', 'red')
-  const isYellow = propEq('color', 'yellow')
-  const onlyReds = filter(isRed)
-  const onlyYellows = filter(isYellow)
-
-  const connectN = (n) => {
-    return pipe(
-      connect(n),
-      map(maybeCounter(last(turn))),
-      reject(maybe => maybe.isNothing()),
-      map(maybe => maybe._val),
-      onlyReds,
-      map(prop('ref'))
-    )
-  }
-
-  const findCounters = (ref) => {
-    const connect1 = connectN(1)(ref)
-    const connect2 = connectN(2)(ref)
-    const connect3 = connectN(3)(ref)
-    const results = insert(0, ref, concat(connect1, connect2, connect3))
-    const byColInd = ascend(last)
-    return sort(byColInd, results)
+    return reduceWhile(connect4, fn, [ref], transformFns)
   }
 
   const takeTurn = (color, col) => {
@@ -166,7 +179,6 @@ test('you can check the cells around you', () => {
     const play = updateBoard(board, color)
     const nextBoard = play(ref)
     turn.push(nextBoard)
-    const isWin = findCounters(ref)
   }
 
 
@@ -178,34 +190,43 @@ test('you can check the cells around you', () => {
     return map(renderRow, board)
   }
 
-  takeTurn('red', 3)
   takeTurn('yellow', 3)
-  takeTurn('red', 2)
   takeTurn('yellow', 3)
-  takeTurn('red', 3)
   takeTurn('yellow', 2)
-  takeTurn('red', 4)
+  takeTurn('yellow', 2)
+  takeTurn('yellow', 2)
   takeTurn('yellow', 4)
+  takeTurn('yellow', 4)
+  takeTurn('red', 1)
+  takeTurn('red', 1)
+  takeTurn('red', 1)
+  takeTurn('red', 3)
+  takeTurn('red', 3)
+  takeTurn('red', 5)
+  takeTurn('red', 5)
+  takeTurn('red', 5)
   takeTurn('red', 5)
 
-  console.log(renderBoard(last(turn)))
   expect(maybeCounter(last(turn), [12, 39]) instanceof Maybe ).toBe(true)
-
   maybeCounter(last(turn), [4, 2]).map(({ ref }) => expect(ref).toEqual([4, 2]))
-  expect(connect(1)([0, 0])).toEqual([
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-    [1, 1],
-    [-1, -1],
-    [-1, 1],
-    [1, -1]
-  ])
-  expect(findCounters([4, 2])).toEqual([
-    [4, 1],
-    [4, 2],
-    [4, 3],
+  expect(findConnectionsFor('red', [1, 4])).toEqual([
+    [1, 4],
+    [2, 4],
+    [3, 4],
     [4, 4]
   ])
+  expect(findConnectionsFor('yellow', [3, 3])).toEqual([[3, 3]])
+  expect(connect4([1, 2])).toBe(true)
+  expect(connect4([1, 2, 3, 4])).toBe(false)
+
+  takeTurn('yellow', 1)
+
+  expect(findConnectionsFor('yellow', [1, 0])).toEqual([
+    [1, 0],
+    [2, 1],
+    [3, 2],
+    [4, 3]
+  ])
+
+  console.log(renderBoard(last(turn)))
 })
