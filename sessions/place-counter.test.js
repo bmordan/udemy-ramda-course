@@ -228,5 +228,5 @@ test('you can check the cells around you', () => {
     [4, 3]
   ])
 
-  console.log(renderBoard(last(turn)))
+  // console.log(renderBoard(last(turn)))
 })
