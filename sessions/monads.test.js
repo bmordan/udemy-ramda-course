@@ -6,7 +6,10 @@ const {
   pipe,
   tap,
   isNil,
-  update
+  update,
+  difference,
+  dec,
+  inc
 } = require('ramda')
 
 const Grid = (rows, cols) => {
@@ -40,6 +43,48 @@ const grid14 = addCounterToGrid(grid13, 5, " O")
 const grid15 = addCounterToGrid(grid14, 2, " X")
 const grid16 = addCounterToGrid(grid15, 5, " O")
 
-test('using monads', () => {
-  console.log(grid16)
+function Maybe (val) {
+  this._val = val
+}
+Maybe.of = (val) => {
+  new Maybe(val)
+}
+Maybe.prototype.isNothing = () => {
+  return (this)
+}
+
+const up = adjust(dec, 0)
+const down = adjust(inc, 0)
+const left = adjust(dec, 1)
+const right = adjust(inc, 1)
+const upLeft = pipe(adjust(dec, 0), adjust(dec, 1))
+const downRight = pipe(adjust(inc, 0), adjust(inc, 1))
+const upRight = pipe(adjust(dec, 0), adjust(inc, 1))
+const downLeft = pipe(adjust(inc, 0), adjust(dec, 1))
+const transformFns = [
+  [up, down],
+  [left, right],
+  [upLeft, downRight],
+  [upRight, downLeft]
+]
+
+const connect4 = (grid, lastPlay) => {
+  const [row, col] = lastPlay
+  return [lastPlay]
+}
+
+test('can transform a tuple', () => {
+  const trans = down([2, 5])
+  expect(trans).toEqual([3, 5])
+  expect(grid16[trans[0]][trans[1]]).toEqual(" O")
+  expect(() => grid16[6][5]).toThrow()
+})
+
+test.skip('find 4 connected counters', () => {
+  expect(connect4(grid16, [2, 5])).toEqual([
+    [2, 5],
+    [3, 5],
+    [4, 5],
+    [5, 5]
+  ])
 })
